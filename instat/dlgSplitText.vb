@@ -89,6 +89,9 @@ Public Class dlgSplitText
     End Sub
 
     Private Sub SetDefaults()
+
+        SimpleTranslateTool.SimpleTranslateTool.translateForm(Me, "fr")
+
         clsTextComponentsFixed = New RFunction
         clsTextComponentsMaximum = New RFunction
         clsBinaryColumns = New RFunction
