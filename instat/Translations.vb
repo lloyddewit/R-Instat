@@ -80,18 +80,24 @@ Public Class Translations
     End Sub
 
     Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
-        'Dim translatedString As String
-
-        '' Attempt to translate the form's title if it has a tag
-        'If frm.Tag IsNot Nothing Then
-        '    translatedString = My.Resources.ResourceManager.GetObject(frm.Tag)
-        '    If (translatedString IsNot Nothing) Then
-        '        frm.Text = translatedString
-        '    End If
-        'End If
-        ' Translate all controls in object
-        translateEach(ctrParent.Controls, ctrParent, New ComponentModel.ComponentResourceManager(ctrParent.GetType()), CultureInfo)
+        If Not IsNothing(TryCast(ctrParent, Form)) Then
+            SimpleTranslateTool.SimpleTranslateTool.translateForm(ctrParent, My.Settings.language)
+        End If
     End Sub
+
+    'Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
+    '    'Dim translatedString As String
+
+    '    '' Attempt to translate the form's title if it has a tag
+    '    'If frm.Tag IsNot Nothing Then
+    '    '    translatedString = My.Resources.ResourceManager.GetObject(frm.Tag)
+    '    '    If (translatedString IsNot Nothing) Then
+    '    '        frm.Text = translatedString
+    '    '    End If
+    '    'End If
+    '    ' Translate all controls in object
+    '    translateEach(ctrParent.Controls, ctrParent, New ComponentModel.ComponentResourceManager(ctrParent.GetType()), CultureInfo)
+    'End Sub
 
     ' translateMenu and translateSubMenu should not be neccessary if we can improve translateEach to accept any iterable
     Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
