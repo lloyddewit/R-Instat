@@ -171,6 +171,7 @@ Public Class frmMain
     ' TODO This is used instead of autoTranslate so that split container isn't shifted
     ' Need to fix this so that all of frmMain can be translated
     Public Sub TranslateFrmMainMenu()
+        ExportMenuNames(mnuBar.Items, Me)
         translateMenu(mnuBar.Items, Me)
     End Sub
 

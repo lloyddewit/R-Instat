@@ -85,6 +85,93 @@ Public Class Translations
         End If
     End Sub
 
+    Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
+        Dim mnuItem As ToolStripMenuItem
+
+        For Each tsItem As ToolStripItem In tsCollection
+            If tsItem.Text <> "" Then
+                SimpleTranslateTool.SimpleTranslateTool.translateMenuItem(ctrParent, tsItem, My.Settings.language)
+            End If
+            mnuItem = TryCast(tsItem, ToolStripMenuItem)
+            If mnuItem IsNot Nothing Then
+                If mnuItem.HasDropDownItems Then
+                    translateMenu(mnuItem.DropDownItems, ctrParent)
+                End If
+            End If
+        Next
+        'For Each control In ctrParent.Controls
+        '    Console.WriteLine(control.ToString)
+        'Next
+        'autoTranslate(ctrParent)
+    End Sub
+
+    Public Shared Sub ExportMenuNames(tsCollection As ToolStripItemCollection, ctrParent As Control)
+        Dim desktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+        Dim newfile As String = "form_controls.csv"
+        Dim newPath As String = System.IO.Path.Combine(desktopPath, newfile)
+
+        Dim strMenuItemsAsCsv As String = GetMenuItemsAsCsv(tsCollection, ctrParent)
+        Using sw As New System.IO.StreamWriter(newPath)
+            sw.WriteLine(strMenuItemsAsCsv)
+            sw.Flush()
+            sw.Close()
+        End Using
+    End Sub
+
+    Private Shared Function GetMenuItemsAsCsv(tsCollection As ToolStripItemCollection, ctrParent As Control) As String
+        Dim strMenuItemsAsCsv As String = ""
+
+        For Each tsItem As ToolStripItem In tsCollection
+            If tsItem.Text <> "" Then
+                strMenuItemsAsCsv &= ctrParent.Name & "," & tsItem.Name & "," & tsItem.Text & vbCrLf
+            End If
+            Dim mnuItem As ToolStripMenuItem = TryCast(tsItem, ToolStripMenuItem)
+            If mnuItem IsNot Nothing Then
+                If mnuItem.HasDropDownItems Then
+                    strMenuItemsAsCsv &= GetMenuItemsAsCsv(mnuItem.DropDownItems, ctrParent)
+                End If
+            End If
+        Next
+
+        Return strMenuItemsAsCsv
+    End Function
+
+    'prototype from Danny 19/03/21
+    Private Sub ExportMenuText()
+        Dim lstItems As New List(Of String)
+        Dim strList As String
+        Dim desktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+        Dim newfile As String = "menu_items.txt"
+        Dim newPath As String = System.IO.Path.Combine(desktopPath, newfile)
+
+        'GetMenuItems(mnuBar.Items, lstItems)
+        lstItems = lstItems.Distinct().ToList()
+        strList = Join(lstItems.ToArray(), ",")
+        Using sw As New System.IO.StreamWriter(newPath)
+            sw.WriteLine(strList)
+            sw.Flush()
+            sw.Close()
+        End Using
+    End Sub
+
+    'prototype from Danny 19/03/21
+    Private Sub GetMenuItems(tsCollection As ToolStripItemCollection, lstItems As List(Of String))
+        Dim mnuItem As ToolStripMenuItem
+
+        For Each tsItem As ToolStripItem In tsCollection
+            If tsItem.Text <> "" Then
+                lstItems.Add(Chr(34) & tsItem.Text & Chr(34))
+            End If
+            mnuItem = TryCast(tsItem, ToolStripMenuItem)
+            If mnuItem IsNot Nothing Then
+                If mnuItem.HasDropDownItems Then
+                    GetMenuItems(mnuItem.DropDownItems, lstItems)
+                End If
+            End If
+        Next
+    End Sub
+
+
     'Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
     '    'Dim translatedString As String
 
@@ -100,23 +187,23 @@ Public Class Translations
     'End Sub
 
     ' translateMenu and translateSubMenu should not be neccessary if we can improve translateEach to accept any iterable
-    Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
-        Dim tsItem As ToolStripItem
-        Dim mnuItem As ToolStripMenuItem
-        Dim res As ComponentModel.ComponentResourceManager = New ComponentModel.ComponentResourceManager(ctrParent.GetType)
+    'Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
+    '    Dim tsItem As ToolStripItem
+    '    Dim mnuItem As ToolStripMenuItem
+    '    Dim res As ComponentModel.ComponentResourceManager = New ComponentModel.ComponentResourceManager(ctrParent.GetType)
 
-        For Each tsItem In tsCollection
-            ' process this item, then recursively process any sub items
-            res.ApplyResources(tsItem, tsItem.Name, Threading.Thread.CurrentThread.CurrentUICulture)
-            mnuItem = TryCast(tsItem, ToolStripMenuItem)
-            If mnuItem IsNot Nothing Then
-                mnuItem = DirectCast(tsItem, ToolStripMenuItem)
-                If mnuItem.HasDropDownItems Then
-                    translateMenu(mnuItem.DropDownItems, ctrParent)
-                End If
-            End If
-        Next
-    End Sub
+    '    For Each tsItem In tsCollection
+    '        ' process this item, then recursively process any sub items
+    '        res.ApplyResources(tsItem, tsItem.Name, Threading.Thread.CurrentThread.CurrentUICulture)
+    '        mnuItem = TryCast(tsItem, ToolStripMenuItem)
+    '        If mnuItem IsNot Nothing Then
+    '            mnuItem = DirectCast(tsItem, ToolStripMenuItem)
+    '            If mnuItem.HasDropDownItems Then
+    '                translateMenu(mnuItem.DropDownItems, ctrParent)
+    '            End If
+    '        End If
+    '    Next
+    'End Sub
 
     '' translateMenu and translateSubMenu should not be neccessary if we can improve translateEach to accept any iterable
     'Public Shared Sub translateSubMenu(subMenuControl As ToolStripItemCollection)
