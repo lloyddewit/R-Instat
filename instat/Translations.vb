@@ -23,7 +23,7 @@ Public Class Translations
 
     Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
         If Not IsNothing(TryCast(ctrParent, Form)) Then
-            SimpleTranslateTool.SimpleTranslateTool.translateForm(ctrParent,
+            TranslateWinForm.clsTranslateWinForm.translateForm(ctrParent,
                     "C:\Users\steph\source\repos\lloyddewit\R-Instat\instat\static\Translations\rInstatTranslations0_7.db",
                     My.Settings.language)
         End If
@@ -35,7 +35,7 @@ Public Class Translations
         ' The CSV file can be imported into the translations database.
         ' The function below only needs to be executed once per release.
         'ExportMenuNames(tsCollection, ctrParent)
-        SimpleTranslateTool.SimpleTranslateTool.translateMenuItems(tsCollection, ctrParent,
+        TranslateWinForm.clsTranslateWinForm.translateMenuItems(tsCollection, ctrParent,
                     "C:\Users\steph\source\repos\lloyddewit\R-Instat\instat\static\Translations\rInstatTranslations0_7.db",
                     My.Settings.language)
     End Sub
