@@ -21,17 +21,36 @@ Public Class Translations
     ' These are prototype functions and are still under development.
     '**********************************************************************************************
 
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>
+    '''     TODO this function is still under development - please do not peer review or test yet.
+    '''     Attempts to translate all the text in <paramref name="ctrParent"/> to the currently
+    '''     configured language.
+    ''' </summary>
+    '''
+    ''' <param name="ctrParent">    The WinForm control to translate. </param>
+    ''' <param name="CultureInfo">  (Optional) Not used. Included only for historical reasons. </param>
+    '''--------------------------------------------------------------------------------------------
     Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
         If IsNothing(TryCast(ctrParent, Form)) Then
             Exit Sub
         End If
 
-        Dim strDesktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-        Dim strDbFile As String = "RInstatTranslations\rInstatTranslations.db"
-        Dim strDbPath As String = System.IO.Path.Combine(strDesktopPath, strDbFile)
-        TranslateWinForm.clsTranslateWinForm.translateForm(ctrParent, strDbPath, "fr")
+        Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateForm(ctrParent, GetDbPath(), GetLanguageCode())
+        If Not String.IsNullOrEmpty(strErrorMsg) Then
+            MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
+        End If
     End Sub
 
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>
+    '''     Attempts to translate all the text in the menu items in <paramref name="tsCollection"/> 
+    '''     to  the currently configured language.
+    ''' </summary>
+    '''
+    ''' <param name="tsCollection">     The WinForm menu items to translate. </param>
+    ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
+    '''--------------------------------------------------------------------------------------------
     Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
         'TODO Lloyd 22/03/21 The function 'ExportMenuNames' below generates a csv file containing 
         ' all the menu items and their text.
@@ -39,14 +58,48 @@ Public Class Translations
         ' The function below only needs to be executed once per release.
         'ExportMenuNames(tsCollection, ctrParent)
 
-        Dim strDesktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-        Dim strDbFile As String = "RInstatTranslations\rInstatTranslations.db"
-        Dim strDbPath As String = System.IO.Path.Combine(strDesktopPath, strDbFile)
-        Dim arrLanguageCodes As String() = frmMain.clsInstatOptions.strLanguageCultureCode.Split(New Char() {"-"c})
-        Dim strLanguageCode As String = arrLanguageCodes(0)
-        TranslateWinForm.clsTranslateWinForm.translateMenuItems(tsCollection, ctrParent, strDbPath, strLanguageCode)
+        Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateMenuItems(tsCollection, ctrParent, GetDbPath(), GetLanguageCode())
+        If Not String.IsNullOrEmpty(strErrorMsg) Then
+            MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
+        End If
     End Sub
 
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   Returns the language code for the currently configured language (e.g. 'en' for 
+    '''             English, 'fr' for French etc.). </summary>
+    '''
+    ''' <returns>   The language code for the currently configured language (e.g. 'en' for
+    '''             English, 'fr' for French etc.). </returns>
+    '''--------------------------------------------------------------------------------------------
+    Private Shared Function GetLanguageCode() As String
+        Dim arrLanguageCodes As String() = frmMain.clsInstatOptions.strLanguageCultureCode.Split(New Char() {"-"c})
+        Dim strLanguageCode As String = arrLanguageCodes(0)
+        Return strLanguageCode
+    End Function
+
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   Returns the full path of the SQLite translations database file. </summary>
+    '''
+    ''' <returns>   The full path of the SQLite translations database file. </returns>
+    '''--------------------------------------------------------------------------------------------
+    Private Shared Function GetDbPath() As String
+        Dim strTranslationsPath As String = String.Concat(Application.StartupPath, "\translations")
+        Dim strDbFile As String = "rInstatTranslations.db"
+        Dim strDbPath As String = System.IO.Path.Combine(strTranslationsPath, strDbFile)
+        Return strDbPath
+    End Function
+
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   Writes a file containing the parent, name and text of each (sub)menu option in
+    '''     <paramref name="tsCollection"/>. The file is formatted as a 'csv' file with a format
+    '''     suitable for importing into the translations database. 
+    '''     This function should normally only be executed when the translations database needs to 
+    '''     be updated prior to a new R-Instat release.
+    ''' </summary>
+    '''
+    ''' <param name="tsCollection">     The WinForm menu items to include in the 'csv' file. </param>
+    ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
+    '''--------------------------------------------------------------------------------------------
     Private Shared Sub ExportMenuNames(tsCollection As ToolStripItemCollection, ctrParent As Control)
         Dim desktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
         Dim newfile As String = "form_controls.csv"
@@ -60,6 +113,22 @@ Public Class Translations
         End Using
     End Sub
 
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   
+    '''     Recursively traverses the <paramref name="tsCollection"/> menu hierarchy and returns a 
+    '''     string containing the parent, name and associated text of each (sub)menu option in 
+    '''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list 
+    '''     suitable for importing into a database.
+    ''' </summary>
+    '''
+    ''' <param name="tsCollection">     The WinForm menu items to add to the return string. </param>
+    ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
+    '''
+    ''' <returns>   
+    '''     A string containing the parent and name of each (sub)menu option in
+    '''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list
+    '''     suitable for importing into a database. </returns>
+    '''--------------------------------------------------------------------------------------------
     Private Shared Function GetMenuItemsAsCsv(tsCollection As ToolStripItemCollection, ctrParent As Control) As String
         Dim strMenuItemsAsCsv As String = ""
 
@@ -154,7 +223,6 @@ Public Class Translations
     ' started in March 2021.
     ' These functions will be deleted when the new translation system has been implemented.
     '**********************************************************************************************
-
 
     Public Shared Sub DELETEMEautoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
         'Dim translatedString As String
