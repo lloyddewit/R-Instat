@@ -105,7 +105,7 @@ Public Class Translations
         Dim newPath As String = System.IO.Path.Combine(desktopPath, newfile)
 
         Dim strControlsAsCsv As String = GetControlsAsCsv(ctrParent, ctrParent)
-        Using sw As New System.IO.StreamWriter(newPath)
+        Using sw As New System.IO.StreamWriter(newPath, True)
             Console.WriteLine(strControlsAsCsv)
             sw.WriteLine(strControlsAsCsv)
             sw.Flush()
