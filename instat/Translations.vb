@@ -32,14 +32,17 @@ Public Class Translations
     ''' <param name="CultureInfo">  (Optional) Not used. Included only for historical reasons. </param>
     '''--------------------------------------------------------------------------------------------
     Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
-        If IsNothing(TryCast(ctrParent, Form)) Then
-            Exit Sub
-        End If
+        'TODO
+        ExportControls(ctrParent)
 
-        Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateForm(ctrParent, GetDbPath(), GetLanguageCode())
-        If Not String.IsNullOrEmpty(strErrorMsg) Then
-            MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
-        End If
+        'If IsNothing(TryCast(ctrParent, Form)) Then
+        '    Exit Sub
+        'End If
+
+        'Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateForm(ctrParent, GetDbPath(), GetLanguageCode())
+        'If Not String.IsNullOrEmpty(strErrorMsg) Then
+        '    MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
+        'End If
     End Sub
 
     '''--------------------------------------------------------------------------------------------
@@ -57,6 +60,8 @@ Public Class Translations
         ' The CSV file can be imported into the translations database.
         ' The function below only needs to be executed once per release.
         'ExportMenuNames(tsCollection, ctrParent)
+        'TODO
+        autoTranslate(ctrParent)
 
         Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateMenuItems(tsCollection, ctrParent, GetDbPath(), GetLanguageCode())
         If Not String.IsNullOrEmpty(strErrorMsg) Then
@@ -87,6 +92,46 @@ Public Class Translations
         Dim strDbFile As String = "rInstatTranslations.db"
         Dim strDbPath As String = System.IO.Path.Combine(strTranslationsPath, strDbFile)
         Return strDbPath
+    End Function
+
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   TODO </summary>
+    '''
+    ''' <param name="ctrParent">    The WinForm control to translate. </param>
+    '''--------------------------------------------------------------------------------------------
+    Private Shared Sub ExportControls(ctrParent As Control)
+        Dim desktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+        Dim newfile As String = "form_controls2.csv"
+        Dim newPath As String = System.IO.Path.Combine(desktopPath, newfile)
+
+        Dim strControlsAsCsv As String = GetControlsAsCsv(ctrParent, ctrParent)
+        Using sw As New System.IO.StreamWriter(newPath)
+            Console.WriteLine(strControlsAsCsv)
+            sw.WriteLine(strControlsAsCsv)
+            sw.Flush()
+            sw.Close()
+        End Using
+    End Sub
+
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   TODO. </summary>
+    '''
+    ''' <param name="ctrParent">    The WinForm control that is the parent of the menu. </param>
+    ''' <param name="ctrChild">     The counter child. </param>
+    '''
+    ''' <returns>   The controls as CSV. </returns>
+    '''--------------------------------------------------------------------------------------------
+    Private Shared Function GetControlsAsCsv(ctrParent As Control, ctrChild As Control) As String
+        Dim strControlsAsCsv As String = ""
+        If ctrChild.Text <> "" Then
+            strControlsAsCsv = ctrParent.Name & "," & ctrChild.Name & "," & ctrChild.Text & vbCrLf
+        End If
+
+        For Each ctrGrandchild As Control In ctrChild.Controls
+            strControlsAsCsv &= GetControlsAsCsv(ctrChild, ctrGrandchild)
+        Next
+
+        Return strControlsAsCsv
     End Function
 
     '''--------------------------------------------------------------------------------------------
