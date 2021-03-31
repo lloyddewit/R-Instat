@@ -38,24 +38,24 @@ Partial Class frmSetupLoading
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.lblHeader = New System.Windows.Forms.Label()
+        Me.lblHeaderSetupLoading = New System.Windows.Forms.Label()
         Me.pgbProgres = New System.Windows.Forms.ProgressBar()
         Me.lblWaiting = New System.Windows.Forms.Label()
         Me.lblSeparator = New System.Windows.Forms.Label()
         Me.lblMessage = New System.Windows.Forms.Label()
         Me.SuspendLayout()
         '
-        'lblHeader
+        'lblHeaderSetupLoading
         '
-        Me.lblHeader.Dock = System.Windows.Forms.DockStyle.Top
-        Me.lblHeader.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblHeader.Location = New System.Drawing.Point(0, 0)
-        Me.lblHeader.Name = "lblHeader"
-        Me.lblHeader.Size = New System.Drawing.Size(430, 79)
-        Me.lblHeader.TabIndex = 0
-        Me.lblHeader.Text = "Sorry for the wait." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "An R command is taking some time to complete. " & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Please be " &
+        Me.lblHeaderSetupLoading.Dock = System.Windows.Forms.DockStyle.Top
+        Me.lblHeaderSetupLoading.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblHeaderSetupLoading.Location = New System.Drawing.Point(0, 0)
+        Me.lblHeaderSetupLoading.Name = "lblHeaderSetupLoading"
+        Me.lblHeaderSetupLoading.Size = New System.Drawing.Size(430, 79)
+        Me.lblHeaderSetupLoading.TabIndex = 0
+        Me.lblHeaderSetupLoading.Text = "Sorry for the wait." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "An R command is taking some time to complete. " & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Please be " &
     "patient while the process finishes."
-        Me.lblHeader.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
+        Me.lblHeaderSetupLoading.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
         '
         'pgbProgres
         '
@@ -106,7 +106,7 @@ Partial Class frmSetupLoading
         Me.Controls.Add(Me.lblSeparator)
         Me.Controls.Add(Me.lblWaiting)
         Me.Controls.Add(Me.pgbProgres)
-        Me.Controls.Add(Me.lblHeader)
+        Me.Controls.Add(Me.lblHeaderSetupLoading)
         Me.Cursor = System.Windows.Forms.Cursors.Default
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow
         Me.Location = New System.Drawing.Point(470, 40)
@@ -120,7 +120,7 @@ Partial Class frmSetupLoading
 
     End Sub
 
-    Friend WithEvents lblHeader As Label
+    Friend WithEvents lblHeaderSetupLoading As Label
     Friend WithEvents pgbProgres As ProgressBar
     Friend WithEvents lblWaiting As Label
     Friend WithEvents lblSeparator As Label
