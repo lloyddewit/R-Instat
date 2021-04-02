@@ -32,17 +32,20 @@ Public Class Translations
     ''' <param name="CultureInfo">  (Optional) Not used. Included only for historical reasons. </param>
     '''--------------------------------------------------------------------------------------------
     Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
-        'TODO
-        ExportControls(ctrParent)
+        'TODO Lloyd 01/04/21 The function 'ExportControls' below generates a csv file containing
+        ' all the form's control names and their text.
+        ' The CSV file can be imported into the translations database.
+        ' The function below only needs to be executed once per release.
+        'ExportControls(ctrParent)
 
-        'If IsNothing(TryCast(ctrParent, Form)) Then
-        '    Exit Sub
-        'End If
+        If IsNothing(TryCast(ctrParent, Form)) Then
+            Exit Sub
+        End If
 
-        'Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateForm(ctrParent, GetDbPath(), GetLanguageCode())
-        'If Not String.IsNullOrEmpty(strErrorMsg) Then
-        '    MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
-        'End If
+        Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateForm(ctrParent, GetDbPath(), GetLanguageCode())
+        If Not String.IsNullOrEmpty(strErrorMsg) Then
+            MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
+        End If
     End Sub
 
     '''--------------------------------------------------------------------------------------------
@@ -128,7 +131,7 @@ Public Class Translations
         End If
 
         For Each ctrGrandchild As Control In ctrChild.Controls
-            strControlsAsCsv &= GetControlsAsCsv(ctrChild, ctrGrandchild)
+            strControlsAsCsv &= GetControlsAsCsv(ctrParent, ctrGrandchild)
         Next
 
         Return strControlsAsCsv
