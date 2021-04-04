@@ -13,6 +13,8 @@
 '
 ' You should have received a copy of the GNU General Public License 
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Imports System.Reflection
+Imports System.Text.RegularExpressions
 
 Public Class Translations
 
@@ -32,12 +34,6 @@ Public Class Translations
     ''' <param name="CultureInfo">  (Optional) Not used. Included only for historical reasons. </param>
     '''--------------------------------------------------------------------------------------------
     Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
-        'TODO Lloyd 01/04/21 The function 'ExportControls' below generates a csv file containing
-        ' all the form's control names and their text.
-        ' The CSV file can be imported into the translations database.
-        ' The function below only needs to be executed once per release.
-        'ExportControls(ctrParent)
-
         If IsNothing(TryCast(ctrParent, Form)) Then
             Exit Sub
         End If
@@ -63,6 +59,14 @@ Public Class Translations
         ' The CSV file can be imported into the translations database.
         ' The function below only needs to be executed once per release.
         'ExportMenuNames(tsCollection, ctrParent)
+
+        ' TODO Lloyd 01/04/21 The function 'ExportControls' below generates, for every form in the 
+        ' application, a csv file containing the form name, the names of the form's controls, and 
+        ' the text of the form's controls.
+        ' The CSV file can be imported into the translations database.
+        ' The function below only needs to be executed once per release.
+        'ExportControls()
+
         'TODO
         autoTranslate(ctrParent)
 
@@ -97,18 +101,27 @@ Public Class Translations
         Return strDbPath
     End Function
 
-    '''--------------------------------------------------------------------------------------------
-    ''' <summary>   TODO </summary>
-    '''
-    ''' <param name="ctrParent">    The WinForm control to translate. </param>
-    '''--------------------------------------------------------------------------------------------
-    Private Shared Sub ExportControls(ctrParent As Control)
+    ''' <summary>   TODO. </summary>
+    Private Shared Sub ExportControls()
+        'Get list of all form classes in the application
+        Dim clsAssembly As Assembly = Assembly.GetExecutingAssembly()
+        Dim lstFormClasses As List(Of Type) = clsAssembly.GetTypes().Where(Function(t) t.BaseType = GetType(Form)).ToList()
+
+        'Populate the csv string for each form in the project
+        'Note: The `My.Forms` object provides an instance of each form in the current project. 
+        '      The name of the property is the same as the name of the form that the property 
+        '      accesses.
+        Dim strControlsAsCsv As String = ""
+        For Each typFormClass As Type In lstFormClasses
+            Dim frmTemp As Form = CallByName(My.Forms, typFormClass.Name, CallType.Get)
+            strControlsAsCsv &= GetControlsAsCsv(frmTemp, frmTemp)
+        Next
+
+        'Write the csv file
         Dim desktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
         Dim newfile As String = "form_controls2.csv"
         Dim newPath As String = System.IO.Path.Combine(desktopPath, newfile)
-
-        Dim strControlsAsCsv As String = GetControlsAsCsv(ctrParent, ctrParent)
-        Using sw As New System.IO.StreamWriter(newPath, True)
+        Using sw As New System.IO.StreamWriter(newPath)
             Console.WriteLine(strControlsAsCsv)
             sw.WriteLine(strControlsAsCsv)
             sw.Flush()
@@ -125,8 +138,16 @@ Public Class Translations
     ''' <returns>   The controls as CSV. </returns>
     '''--------------------------------------------------------------------------------------------
     Private Shared Function GetControlsAsCsv(ctrParent As Control, ctrChild As Control) As String
+        If IsNothing(ctrParent) OrElse IsNothing(ctrChild) OrElse
+                TypeOf ctrChild Is ucrCheck OrElse TypeOf ctrChild Is ucrInput Then
+            Return ""
+        End If
+
         Dim strControlsAsCsv As String = ""
-        If ctrChild.Text <> "" Then
+        If Not (String.IsNullOrEmpty(ctrParent.Name) OrElse
+                String.IsNullOrEmpty(ctrChild.Name) OrElse
+                String.IsNullOrEmpty(ctrChild.Text) OrElse
+                Not Regex.IsMatch(ctrChild.Text, "[a-zA-Z]")) Then
             strControlsAsCsv = ctrParent.Name & "," & ctrChild.Name & "," & ctrChild.Text & vbCrLf
         End If
 
