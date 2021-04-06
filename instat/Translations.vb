@@ -15,6 +15,7 @@
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Imports System.Reflection
 Imports System.Text.RegularExpressions
+Imports instat.My.MyProject
 
 Public Class Translations
 
@@ -54,18 +55,12 @@ Public Class Translations
     ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
     '''--------------------------------------------------------------------------------------------
     Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
-        'TODO Lloyd 22/03/21 The function 'ExportMenuNames' below generates a csv file containing 
-        ' all the menu items and their text.
-        ' The CSV file can be imported into the translations database.
-        ' The function below only needs to be executed once per release.
-        'ExportMenuNames(tsCollection, ctrParent)
-
         ' TODO Lloyd 01/04/21 The function 'ExportControls' below generates, for every form in the 
         ' application, a csv file containing the form name, the names of the form's controls, and 
         ' the text of the form's controls.
         ' The CSV file can be imported into the translations database.
         ' The function below only needs to be executed once per release.
-        'ExportControls()
+        WriteCsvFile()
 
         'TODO
         autoTranslate(ctrParent)
@@ -95,22 +90,26 @@ Public Class Translations
     ''' <returns>   The full path of the SQLite translations database file. </returns>
     '''--------------------------------------------------------------------------------------------
     Private Shared Function GetDbPath() As String
-        Dim strTranslationsPath As String = String.Concat(Application.StartupPath, "\translations")
+        Dim strTranslationsPath As String = String.Concat(System.Windows.Forms.Application.StartupPath, "\translations")
         Dim strDbFile As String = "rInstatTranslations.db"
         Dim strDbPath As String = System.IO.Path.Combine(strTranslationsPath, strDbFile)
         Return strDbPath
     End Function
 
     ''' <summary>   TODO. </summary>
-    Private Shared Sub ExportControls()
-        'Get list of all form classes in the application
+    Private Shared Sub WriteCsvFile()
+        'Get list of all form classes in the application 
+        '    (specifically, a list of 'Type' objects, each 'Type' object contains details about 
+        '    a class)
         Dim clsAssembly As Assembly = Assembly.GetExecutingAssembly()
         Dim lstFormClasses As List(Of Type) = clsAssembly.GetTypes().Where(Function(t) t.BaseType = GetType(Form)).ToList()
 
         'Populate the csv string for each form in the project
-        'Note: The `My.Forms` object provides an instance of each form in the current project. 
-        '      The name of the property is the same as the name of the form that the property 
-        '      accesses.
+        'Note: We know the name of each form class (see list above). We also know that 
+        '      the 'My.Forms' object contains an object for each form class.
+        '      Conveniently, the name of each object in 'My.Forms' is the same as the name of 
+        '      the object's class. 
+        '      Therefore we can use the class name as the object name in 'CallByName'.
         Dim strControlsAsCsv As String = ""
         For Each typFormClass As Type In lstFormClasses
             Dim frmTemp As Form = CallByName(My.Forms, typFormClass.Name, CallType.Get)
@@ -118,15 +117,22 @@ Public Class Translations
         Next
 
         'Write the csv file
-        Dim desktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-        Dim newfile As String = "form_controls2.csv"
-        Dim newPath As String = System.IO.Path.Combine(desktopPath, newfile)
-        Using sw As New System.IO.StreamWriter(newPath)
+        Dim strDesktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+        Dim strFileName As String = "form_controls.csv"
+        Dim strPath As String = System.IO.Path.Combine(strDesktopPath, strFileName)
+        Using sw As New System.IO.StreamWriter(strPath)
             Console.WriteLine(strControlsAsCsv)
             sw.WriteLine(strControlsAsCsv)
             sw.Flush()
             sw.Close()
         End Using
+
+        'This sub should only be used by developers to create the translation export files.
+        'Therefore, exit the application with a message to ensure that this sub is not run 
+        'accidentally in the release version. 
+        MsgBox("The form controls' translation text was written to: " & strPath &
+               ". The application will now exit.", MsgBoxStyle.Exclamation)
+        System.Windows.Forms.Application.Exit()
     End Sub
 
     '''--------------------------------------------------------------------------------------------
@@ -151,36 +157,19 @@ Public Class Translations
             strControlsAsCsv = ctrParent.Name & "," & ctrChild.Name & "," & ctrChild.Text & vbCrLf
         End If
 
-        For Each ctrGrandchild As Control In ctrChild.Controls
-            strControlsAsCsv &= GetControlsAsCsv(ctrParent, ctrGrandchild)
-        Next
-
+        If TypeOf ctrChild Is MenuStrip Then
+            Dim mnuTmp As MenuStrip = DirectCast(ctrChild, MenuStrip)
+            strControlsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuTmp.Items)
+        ElseIf TypeOf ctrChild Is ToolStrip Then
+            Dim mnuTmp As ToolStrip = DirectCast(ctrChild, ToolStrip)
+            strControlsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuTmp.Items)
+        Else
+            For Each ctrGrandchild As Control In ctrChild.Controls
+                strControlsAsCsv &= GetControlsAsCsv(ctrParent, ctrGrandchild)
+            Next
+        End If
         Return strControlsAsCsv
     End Function
-
-    '''--------------------------------------------------------------------------------------------
-    ''' <summary>   Writes a file containing the parent, name and text of each (sub)menu option in
-    '''     <paramref name="tsCollection"/>. The file is formatted as a 'csv' file with a format
-    '''     suitable for importing into the translations database. 
-    '''     This function should normally only be executed when the translations database needs to 
-    '''     be updated prior to a new R-Instat release.
-    ''' </summary>
-    '''
-    ''' <param name="tsCollection">     The WinForm menu items to include in the 'csv' file. </param>
-    ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
-    '''--------------------------------------------------------------------------------------------
-    Private Shared Sub ExportMenuNames(tsCollection As ToolStripItemCollection, ctrParent As Control)
-        Dim desktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-        Dim newfile As String = "form_controls.csv"
-        Dim newPath As String = System.IO.Path.Combine(desktopPath, newfile)
-
-        Dim strMenuItemsAsCsv As String = GetMenuItemsAsCsv(tsCollection, ctrParent)
-        Using sw As New System.IO.StreamWriter(newPath)
-            sw.WriteLine(strMenuItemsAsCsv)
-            sw.Flush()
-            sw.Close()
-        End Using
-    End Sub
 
     '''--------------------------------------------------------------------------------------------
     ''' <summary>   
@@ -190,25 +179,35 @@ Public Class Translations
     '''     suitable for importing into a database.
     ''' </summary>
     '''
-    ''' <param name="tsCollection">     The WinForm menu items to add to the return string. </param>
     ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
+    ''' <param name="tsCollection">     The WinForm menu items to add to the return string. </param>
     '''
     ''' <returns>   
     '''     A string containing the parent and name of each (sub)menu option in
     '''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list
     '''     suitable for importing into a database. </returns>
     '''--------------------------------------------------------------------------------------------
-    Private Shared Function GetMenuItemsAsCsv(tsCollection As ToolStripItemCollection, ctrParent As Control) As String
+    Private Shared Function GetMenuItemsAsCsv(ctrParent As Control, tsCollection As ToolStripItemCollection) As String
         Dim strMenuItemsAsCsv As String = ""
 
         For Each tsItem As ToolStripItem In tsCollection
             If tsItem.Text <> "" Then
                 strMenuItemsAsCsv &= ctrParent.Name & "," & tsItem.Name & "," & tsItem.Text & vbCrLf
             End If
-            Dim mnuItem As ToolStripMenuItem = TryCast(tsItem, ToolStripMenuItem)
-            If mnuItem IsNot Nothing Then
+            If TypeOf tsItem Is ToolStripMenuItem Then
+                Dim mnuItem As ToolStripMenuItem = DirectCast(tsItem, ToolStripMenuItem)
                 If mnuItem.HasDropDownItems Then
-                    strMenuItemsAsCsv &= GetMenuItemsAsCsv(mnuItem.DropDownItems, ctrParent)
+                    strMenuItemsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuItem.DropDownItems)
+                End If
+            ElseIf TypeOf tsItem Is ToolStripSplitButton Then
+                Dim mnuItem As ToolStripSplitButton = DirectCast(tsItem, ToolStripSplitButton)
+                If mnuItem.HasDropDownItems Then
+                    strMenuItemsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuItem.DropDownItems)
+                End If
+            ElseIf TypeOf tsItem Is ToolStripDropDownButton Then
+                Dim mnuItem As ToolStripDropDownButton = DirectCast(tsItem, ToolStripDropDownButton)
+                If mnuItem.HasDropDownItems Then
+                    strMenuItemsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuItem.DropDownItems)
                 End If
             End If
         Next
