@@ -15,7 +15,7 @@
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Imports System.Reflection
 Imports System.Text.RegularExpressions
-Imports instat.My.MyProject
+'Imports instat.My.MyProject
 
 Public Class Translations
 
@@ -98,6 +98,7 @@ Public Class Translations
 
     ''' <summary>   TODO. </summary>
     Private Shared Sub WriteCsvFile()
+
         'Get list of all form classes in the application 
         '    (specifically, a list of 'Type' objects, each 'Type' object contains details about 
         '    a class)
@@ -115,6 +116,11 @@ Public Class Translations
             Dim frmTemp As Form = CallByName(My.Forms, typFormClass.Name, CallType.Get)
             strControlsAsCsv &= GetControlsAsCsv(frmTemp, frmTemp)
         Next
+
+        'TODO The right mouse button menus for the 6 output windows are not accessible via 
+        '     the control lists.
+        '     Therefore, add these manually to the CSV file
+        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrOutput, frmMain.ucrOutput.mnuContextRTB.Items)
 
         'Write the csv file
         Dim strDesktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
@@ -150,14 +156,19 @@ Public Class Translations
         End If
 
         Dim strControlsAsCsv As String = ""
+        Dim arrRNewLines() As String = {vbCr, vbLf, vbCrLf}
         If Not (String.IsNullOrEmpty(ctrParent.Name) OrElse
                 String.IsNullOrEmpty(ctrChild.Name) OrElse
                 String.IsNullOrEmpty(ctrChild.Text) OrElse
-                Not Regex.IsMatch(ctrChild.Text, "[a-zA-Z]")) Then
+                ctrChild.Text.Contains(vbCr) OrElse ctrChild.Text.Contains(vbLf) OrElse 'ignore multiline text
+                Not Regex.IsMatch(ctrChild.Text, "[a-zA-Z]")) Then 'ignore text that doesn't contain letters (e.g. number strings)
             strControlsAsCsv = ctrParent.Name & "," & ctrChild.Name & "," & ctrChild.Text & vbCrLf
         End If
 
-        If TypeOf ctrChild Is MenuStrip Then
+        If TypeOf ctrChild Is ContextMenuStrip Then
+            Dim mnuTmp As ContextMenuStrip = DirectCast(ctrChild, ContextMenuStrip)
+            strControlsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuTmp.Items)
+        ElseIf TypeOf ctrChild Is MenuStrip Then
             Dim mnuTmp As MenuStrip = DirectCast(ctrChild, MenuStrip)
             strControlsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuTmp.Items)
         ElseIf TypeOf ctrChild Is ToolStrip Then
