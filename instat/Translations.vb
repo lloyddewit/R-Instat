@@ -13,9 +13,9 @@
 '
 ' You should have received a copy of the GNU General Public License 
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Imports System.ComponentModel
 Imports System.Reflection
 Imports System.Text.RegularExpressions
-'Imports instat.My.MyProject
 
 Public Class Translations
 
@@ -23,7 +23,6 @@ Public Class Translations
     'TODO This section contains functions for the new translation system started in March 2021.
     ' These are prototype functions and are still under development.
     '**********************************************************************************************
-
     '''--------------------------------------------------------------------------------------------
     ''' <summary>
     '''     TODO this function is still under development - please do not peer review or test yet.
@@ -39,10 +38,7 @@ Public Class Translations
             Exit Sub
         End If
 
-        Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateForm(ctrParent, GetDbPath(), GetLanguageCode())
-        If Not String.IsNullOrEmpty(strErrorMsg) Then
-            MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
-        End If
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateForm(ctrParent, GetDbPath(), GetLanguageCode()))
     End Sub
 
     '''--------------------------------------------------------------------------------------------
@@ -60,12 +56,34 @@ Public Class Translations
         ' the text of the form's controls.
         ' The CSV file can be imported into the translations database.
         ' The function below only needs to be executed once per release.
-        WriteCsvFile()
+        'WriteCsvFile()
 
-        'TODO
-        autoTranslate(ctrParent)
+        If IsNothing(tsCollection) OrElse IsNothing(ctrParent) OrElse IsNothing(TryCast(ctrParent, Form)) Then
+            Exit Sub
+        End If
 
-        Dim strErrorMsg As String = TranslateWinForm.clsTranslateWinForm.translateMenuItems(tsCollection, ctrParent, GetDbPath(), GetLanguageCode())
+        'translate the main form, including all its output windows and menus
+        Dim strDbPath = GetDbPath()
+        Dim strLanguageCode = GetLanguageCode()
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateForm(ctrParent, strDbPath, strLanguageCode))
+
+        'The right mouse button menus for the 6 output windows are not accessible via 
+        '    the control lists. Therefore, translate these menus explicitly
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrOutput.Name, frmMain.ucrOutput.mnuContextRTB.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrColumnMeta.Name, frmMain.ucrColumnMeta.cellContextMenuStrip.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrColumnMeta.Name, frmMain.ucrColumnMeta.grdVariables.RowHeaderContextMenuStrip.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrColumnMeta.Name, frmMain.ucrColumnMeta.statusColumnMenu.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataFrameMeta.Name, frmMain.ucrDataFrameMeta.cellContextMenuStrip.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataFrameMeta.Name, frmMain.ucrDataFrameMeta.rowRightClickMenu.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrLogWindow.Name, frmMain.ucrLogWindow.mnuContextLogFile.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrScriptWindow.Name, frmMain.ucrScriptWindow.mnuContextScript.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataViewer.Name, frmMain.ucrDataViewer.grdData.RowHeaderContextMenuStrip.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataViewer.Name, frmMain.ucrDataViewer.grdData.ColumnHeaderContextMenuStrip.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataViewer.Name, frmMain.ucrDataViewer.grdData.ContextMenuStrip.Items, strDbPath, strLanguageCode))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataViewer.Name, frmMain.ucrDataViewer.grdData.SheetTabContextMenuStrip.Items, strDbPath, strLanguageCode))
+    End Sub
+
+    Private Shared Sub HandleError(strErrorMsg As String)
         If Not String.IsNullOrEmpty(strErrorMsg) Then
             MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
         End If
@@ -114,29 +132,23 @@ Public Class Translations
         Dim strControlsAsCsv As String = ""
         For Each typFormClass As Type In lstFormClasses
             Dim frmTemp As Form = CallByName(My.Forms, typFormClass.Name, CallType.Get)
-            strControlsAsCsv &= GetControlsAsCsv(frmTemp, frmTemp)
+            strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetControlsAsCsv(frmTemp)
         Next
 
-        'TODO The right mouse button menus for the 6 output windows are not accessible via 
-        '     the control lists.
-        '     Therefore, add these manually to the CSV file
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrOutput, frmMain.ucrOutput.mnuContextRTB.Items)
-
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrColumnMeta, frmMain.ucrColumnMeta.cellContextMenuStrip.Items)
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrColumnMeta, frmMain.ucrColumnMeta.grdVariables.RowHeaderContextMenuStrip.Items)
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrColumnMeta, frmMain.ucrColumnMeta.statusColumnMenu.Items)
-
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrDataFrameMeta, frmMain.ucrDataFrameMeta.cellContextMenuStrip.Items)
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrDataFrameMeta, frmMain.ucrDataFrameMeta.rowRightClickMenu.Items)
-
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrLogWindow, frmMain.ucrLogWindow.mnuContextLogFile.Items)
-
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrScriptWindow, frmMain.ucrScriptWindow.mnuContextScript.Items)
-
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrDataViewer, frmMain.ucrDataViewer.grdData.RowHeaderContextMenuStrip.Items)
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrDataViewer, frmMain.ucrDataViewer.grdData.ColumnHeaderContextMenuStrip.Items)
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrDataViewer, frmMain.ucrDataViewer.grdData.ContextMenuStrip.Items)
-        strControlsAsCsv &= GetMenuItemsAsCsv(frmMain.ucrDataViewer, frmMain.ucrDataViewer.grdData.SheetTabContextMenuStrip.Items)
+        'The right mouse button menus for the 6 output windows are not accessible via 
+        '    the control lists. Therefore, add these manually to the CSV file
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrOutput, frmMain.ucrOutput.mnuContextRTB.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrColumnMeta, frmMain.ucrColumnMeta.cellContextMenuStrip.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrColumnMeta, frmMain.ucrColumnMeta.grdVariables.RowHeaderContextMenuStrip.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrColumnMeta, frmMain.ucrColumnMeta.statusColumnMenu.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrDataFrameMeta, frmMain.ucrDataFrameMeta.cellContextMenuStrip.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrDataFrameMeta, frmMain.ucrDataFrameMeta.rowRightClickMenu.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrLogWindow, frmMain.ucrLogWindow.mnuContextLogFile.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrScriptWindow, frmMain.ucrScriptWindow.mnuContextScript.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrDataViewer, frmMain.ucrDataViewer.grdData.RowHeaderContextMenuStrip.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrDataViewer, frmMain.ucrDataViewer.grdData.ColumnHeaderContextMenuStrip.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrDataViewer, frmMain.ucrDataViewer.grdData.ContextMenuStrip.Items)
+        strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetMenuItemsAsCsv(frmMain.ucrDataViewer, frmMain.ucrDataViewer.grdData.SheetTabContextMenuStrip.Items)
 
         'Write the csv file
         Dim strDesktopPath As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
@@ -157,91 +169,150 @@ Public Class Translations
         System.Windows.Forms.Application.Exit()
     End Sub
 
-    '''--------------------------------------------------------------------------------------------
-    ''' <summary>   TODO. </summary>
-    '''
-    ''' <param name="ctrParent">    The WinForm control that is the parent of the menu. </param>
-    ''' <param name="ctrChild">     The counter child. </param>
-    '''
-    ''' <returns>   The controls as CSV. </returns>
-    '''--------------------------------------------------------------------------------------------
-    Private Shared Function GetControlsAsCsv(ctrParent As Control, ctrChild As Control) As String
-        If IsNothing(ctrParent) OrElse IsNothing(ctrChild) OrElse
-                TypeOf ctrChild Is ucrCheck OrElse TypeOf ctrChild Is ucrInput Then
-            Return ""
-        End If
+    ''''--------------------------------------------------------------------------------------------
+    '''' <summary>   TODORecursively traverses all the controls (including menu items) in <paramref name="clsControl"/> and populates <paramref name="dctComponents"/>
+    ''''              </summary>
+    ''''
+    '''' <param name="clsControl">    The control parent. </param>
+    '''' <param name="dctComponents">  [in,out] The dct controls. </param>
+    ''''--------------------------------------------------------------------------------------------
+    'Private Shared Sub GetDctComponentsFromControl(clsControl As Control, ByRef dctComponents As Dictionary(Of String, Component))
+    '    If IsNothing(clsControl) OrElse IsNothing(clsControl.Controls) OrElse
+    '            TypeOf clsControl Is ucrCheck OrElse TypeOf clsControl Is ucrInput OrElse
+    '            IsNothing(dctComponents) Then
+    '        Exit Sub
+    '    End If
 
-        Dim strControlsAsCsv As String = ""
-        Dim arrRNewLines() As String = {vbCr, vbLf, vbCrLf}
-        If Not (String.IsNullOrEmpty(ctrParent.Name) OrElse
-                String.IsNullOrEmpty(ctrChild.Name) OrElse
-                String.IsNullOrEmpty(ctrChild.Text) OrElse
-                ctrChild.Text.Contains(vbCr) OrElse ctrChild.Text.Contains(vbLf) OrElse 'ignore multiline text
-                Not Regex.IsMatch(ctrChild.Text, "[a-zA-Z]")) Then 'ignore text that doesn't contain letters (e.g. number strings)
-            strControlsAsCsv = ctrParent.Name & "," & ctrChild.Name & "," & ctrChild.Text & vbCrLf
-        End If
+    '    If Not (String.IsNullOrEmpty(clsControl.Name) OrElse
+    '                String.IsNullOrEmpty(clsControl.Text) OrElse
+    '                clsControl.Text.Contains(vbCr) OrElse clsControl.Text.Contains(vbLf) OrElse 'ignore multiline text
+    '                Not Regex.IsMatch(clsControl.Text, "[a-zA-Z]") OrElse 'ignore text that doesn't contain any letters (e.g. number strings)
+    '                dctComponents.ContainsKey(clsControl.Name)) Then 'ignore components that are already in the dictionary
+    '        dctComponents.Add(clsControl.Name, clsControl)
+    '    End If
 
-        If TypeOf ctrChild Is ContextMenuStrip Then
-            Dim mnuTmp As ContextMenuStrip = DirectCast(ctrChild, ContextMenuStrip)
-            strControlsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuTmp.Items)
-        ElseIf TypeOf ctrChild Is MenuStrip Then
-            Dim mnuTmp As MenuStrip = DirectCast(ctrChild, MenuStrip)
-            strControlsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuTmp.Items)
-        ElseIf TypeOf ctrChild Is ToolStrip Then
-            Dim mnuTmp As ToolStrip = DirectCast(ctrChild, ToolStrip)
-            strControlsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuTmp.Items)
-        Else
-            For Each ctrGrandchild As Control In ctrChild.Controls
-                strControlsAsCsv &= GetControlsAsCsv(ctrParent, ctrGrandchild)
-            Next
-        End If
-        Return strControlsAsCsv
-    End Function
+    '    For Each ctlChild As Control In clsControl.Controls
 
-    '''--------------------------------------------------------------------------------------------
-    ''' <summary>   
-    '''     Recursively traverses the <paramref name="tsCollection"/> menu hierarchy and returns a 
-    '''     string containing the parent, name and associated text of each (sub)menu option in 
-    '''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list 
-    '''     suitable for importing into a database.
-    ''' </summary>
-    '''
-    ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
-    ''' <param name="tsCollection">     The WinForm menu items to add to the return string. </param>
-    '''
-    ''' <returns>   
-    '''     A string containing the parent and name of each (sub)menu option in
-    '''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list
-    '''     suitable for importing into a database. </returns>
-    '''--------------------------------------------------------------------------------------------
-    Private Shared Function GetMenuItemsAsCsv(ctrParent As Control, tsCollection As ToolStripItemCollection) As String
-        Dim strMenuItemsAsCsv As String = ""
+    '        If TypeOf ctlChild Is MenuStrip Then
+    '            Dim clsMenuStrip As MenuStrip = DirectCast(ctlChild, MenuStrip)
+    '            GetDctComponentsFromMenuItems(clsMenuStrip.Items, dctComponents)
+    '        ElseIf TypeOf ctlChild Is ToolStrip Then
+    '            Dim clsToolStrip As ToolStrip = DirectCast(ctlChild, ToolStrip)
+    '            GetDctComponentsFromMenuItems(clsToolStrip.Items, dctComponents)
+    '        ElseIf TypeOf ctlChild Is Control Then
+    '            GetDctComponentsFromControl(ctlChild, dctComponents)
+    '        End If
 
-        For Each tsItem As ToolStripItem In tsCollection
-            If tsItem.Text <> "" Then
-                strMenuItemsAsCsv &= ctrParent.Name & "," & tsItem.Name & "," & tsItem.Text & vbCrLf
-            End If
-            If TypeOf tsItem Is ToolStripMenuItem Then
-                Dim mnuItem As ToolStripMenuItem = DirectCast(tsItem, ToolStripMenuItem)
-                If mnuItem.HasDropDownItems Then
-                    strMenuItemsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuItem.DropDownItems)
-                End If
-            ElseIf TypeOf tsItem Is ToolStripSplitButton Then
-                Dim mnuItem As ToolStripSplitButton = DirectCast(tsItem, ToolStripSplitButton)
-                If mnuItem.HasDropDownItems Then
-                    strMenuItemsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuItem.DropDownItems)
-                End If
-            ElseIf TypeOf tsItem Is ToolStripDropDownButton Then
-                Dim mnuItem As ToolStripDropDownButton = DirectCast(tsItem, ToolStripDropDownButton)
-                If mnuItem.HasDropDownItems Then
-                    strMenuItemsAsCsv &= GetMenuItemsAsCsv(ctrParent, mnuItem.DropDownItems)
-                End If
-            End If
-        Next
+    '    Next
+    'End Sub
 
-        Return strMenuItemsAsCsv
-    End Function
+    'Private Shared Sub GetDctComponentsFromMenuItems(clsMenuItems As ToolStripItemCollection, ByRef dctComponents As Dictionary(Of String, Component))
+    '    If IsNothing(clsMenuItems) OrElse IsNothing(dctComponents) Then
+    '        Exit Sub
+    '    End If
 
+    '    For Each clsMenuItem As ToolStripItem In clsMenuItems
+
+    '        Dim arrRNewLines() As String = {vbCr, vbLf, vbCrLf}
+    '        If Not (String.IsNullOrEmpty(clsMenuItem.Name) OrElse
+    '                String.IsNullOrEmpty(clsMenuItem.Text) OrElse
+    '                clsMenuItem.Text.Contains(vbCr) OrElse clsMenuItem.Text.Contains(vbLf) OrElse 'ignore multiline text
+    '                Not Regex.IsMatch(clsMenuItem.Text, "[a-zA-Z]") OrElse 'ignore text that doesn't contain any letters (e.g. number strings)
+    '                dctComponents.ContainsKey(clsMenuItem.Name)) Then 'ignore components that are already in the dictionary
+    '            dctComponents.Add(clsMenuItem.Name, clsMenuItem)
+    '        End If
+
+    '        If TypeOf clsMenuItem Is ToolStripMenuItem Then
+    '            Dim mnuItem As ToolStripMenuItem = DirectCast(clsMenuItem, ToolStripMenuItem)
+    '            If mnuItem.HasDropDownItems Then
+    '                GetDctComponentsFromMenuItems(mnuItem.DropDownItems, dctComponents)
+    '            End If
+    '        ElseIf TypeOf clsMenuItem Is ToolStripSplitButton Then
+    '            Dim mnuItem As ToolStripSplitButton = DirectCast(clsMenuItem, ToolStripSplitButton)
+    '            If mnuItem.HasDropDownItems Then
+    '                GetDctComponentsFromMenuItems(mnuItem.DropDownItems, dctComponents)
+    '            End If
+    '        ElseIf TypeOf clsMenuItem Is ToolStripDropDownButton Then
+    '            Dim mnuItem As ToolStripDropDownButton = DirectCast(clsMenuItem, ToolStripDropDownButton)
+    '            If mnuItem.HasDropDownItems Then
+    '                GetDctComponentsFromMenuItems(mnuItem.DropDownItems, dctComponents)
+    '            End If
+    '        End If
+
+    '    Next
+    'End Sub
+
+
+    ''''--------------------------------------------------------------------------------------------
+    '''' <summary>   TODO. </summary>
+    ''''
+    '''' <param name="clsControl">    The WinForm control that is the parent of the menu. </param>
+    ''''
+    '''' <returns>   The controls as CSV. </returns>
+    ''''--------------------------------------------------------------------------------------------
+    'Private Shared Function GetControlsAsCsv(clsControl As Control) As String
+    '    If IsNothing(clsControl) Then
+    '        Return ""
+    '    End If
+
+    '    Dim dctComponents As Dictionary(Of String, Component) = New Dictionary(Of String, Component)
+    '    GetDctComponentsFromControl(clsControl, dctComponents)
+
+    '    Dim strControlsAsCsv As String = ""
+    '    For Each clsComponent In dctComponents
+
+    '        If TypeOf clsComponent.Value Is Control Then
+    '            Dim clsTmpControl As Control = DirectCast(clsComponent.Value, Control)
+    '            strControlsAsCsv &= clsControl.Name & "," & clsComponent.Key & "," & clsTmpControl.Text & vbCrLf
+    '        ElseIf TypeOf clsComponent.Value Is ToolStripItem Then
+    '            Dim clsMenuItem As ToolStripItem = DirectCast(clsComponent.Value, ToolStripItem)
+    '            strControlsAsCsv &= clsControl.Name & "," & clsComponent.Key & "," & clsMenuItem.Text & vbCrLf
+    '        Else
+    '            MsgBox("Developer Error: Translation dictionary entry (" & clsControl.Name & "," & clsComponent.Key & ") contained unexpected value type.")
+    '        End If
+
+    '    Next
+
+    '    Return strControlsAsCsv
+    'End Function
+
+    ''''--------------------------------------------------------------------------------------------
+    '''' <summary>   
+    ''''     Recursively traverses the <paramref name="tsCollection"/> menu hierarchy and returns a 
+    ''''     string containing the parent, name and associated text of each (sub)menu option in 
+    ''''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list 
+    ''''     suitable for importing into a database.
+    '''' </summary>
+    ''''
+    '''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
+    '''' <param name="tsCollection">     The WinForm menu items to add to the return string. </param>
+    ''''
+    '''' <returns>   
+    ''''     A string containing the parent and name of each (sub)menu option in
+    ''''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list
+    ''''     suitable for importing into a database. </returns>
+    ''''--------------------------------------------------------------------------------------------
+    'Private Shared Function GetMenuItemsAsCsv(ctrParent As Control, tsCollection As ToolStripItemCollection) As String
+    '    If IsNothing(ctrParent) OrElse IsNothing(tsCollection) Then
+    '        Return ""
+    '    End If
+
+    '    Dim dctComponents As Dictionary(Of String, Component) = New Dictionary(Of String, Component)
+    '    GetDctComponentsFromMenuItems(tsCollection, dctComponents)
+
+    '    Dim strMenuItemsAsCsv As String = ""
+    '    For Each clsComponent In dctComponents
+
+    '        If TypeOf clsComponent.Value Is ToolStripItem Then
+    '            Dim clsMenuItem As ToolStripItem = DirectCast(clsComponent.Value, ToolStripItem)
+    '            strMenuItemsAsCsv &= ctrParent.Name & "," & clsComponent.Key & "," & clsMenuItem.Text & vbCrLf
+    '        Else
+    '            MsgBox("Developer Error: Translation dictionary entry (" & ctrParent.Name & "," & clsComponent.Key & ") contained unexpected value type.")
+    '        End If
+
+    '    Next
+    '    Return strMenuItemsAsCsv
+    'End Function
 
     '**********************************************************************************************
     'TODO This section contains functions from the old translation system.
