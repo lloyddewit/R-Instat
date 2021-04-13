@@ -13,32 +13,24 @@
 '
 ' You should have received a copy of the GNU General Public License 
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
-Imports System.ComponentModel
 Imports System.Reflection
-Imports System.Text.RegularExpressions
 
 Public Class Translations
 
-    '**********************************************************************************************
-    'TODO This section contains functions for the new translation system started in March 2021.
-    ' These are prototype functions and are still under development.
-    '**********************************************************************************************
     '''--------------------------------------------------------------------------------------------
     ''' <summary>
-    '''     TODO this function is still under development - please do not peer review or test yet.
-    '''     Attempts to translate all the text in <paramref name="ctrParent"/> to the currently
+    '''     Attempts to translate all the text in <paramref name="clsControl"/> to the currently
     '''     configured language.
     ''' </summary>
     '''
-    ''' <param name="ctrParent">    The WinForm control to translate. </param>
-    ''' <param name="CultureInfo">  (Optional) Not used. Included only for historical reasons. </param>
+    ''' <param name="clsControl">    The WinForm control to translate. </param>
     '''--------------------------------------------------------------------------------------------
-    Public Shared Sub autoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
-        If IsNothing(TryCast(ctrParent, Form)) Then
+    Public Shared Sub autoTranslate(clsControl As Control)
+        If IsNothing(TryCast(clsControl, Form)) Then
             Exit Sub
         End If
 
-        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateForm(ctrParent, GetDbPath(), GetLanguageCode()))
+        HandleError(TranslateWinForm.clsTranslateWinForm.TranslateForm(clsControl, GetDbPath(), GetLanguageCode()))
     End Sub
 
     '''--------------------------------------------------------------------------------------------
@@ -51,11 +43,8 @@ Public Class Translations
     ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
     '''--------------------------------------------------------------------------------------------
     Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
-        ' TODO Lloyd 01/04/21 The function 'ExportControls' below generates, for every form in the 
-        ' application, a csv file containing the form name, the names of the form's controls, and 
-        ' the text of the form's controls.
-        ' The CSV file can be imported into the translations database.
-        ' The function below only needs to be executed once per release.
+        ' The function below should normally be commented out. 
+        ' It only needs be uncommented and executed once, prior to each new release.
         'WriteCsvFile()
 
         If IsNothing(tsCollection) OrElse IsNothing(ctrParent) OrElse IsNothing(TryCast(ctrParent, Form)) Then
@@ -83,6 +72,14 @@ Public Class Translations
         HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataViewer.Name, frmMain.ucrDataViewer.grdData.SheetTabContextMenuStrip.Items, strDbPath, strLanguageCode))
     End Sub
 
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   
+    '''    Displays an error message box that displays <paramref name="strErrorMsg"/>.
+    '''    If <paramref name="strErrorMsg"/> is empty then does nothing.
+    ''' </summary>
+    '''
+    ''' <param name="strErrorMsg">  The error message to display. </param>
+    '''--------------------------------------------------------------------------------------------
     Private Shared Sub HandleError(strErrorMsg As String)
         If Not String.IsNullOrEmpty(strErrorMsg) Then
             MsgBox(strErrorMsg, MsgBoxStyle.Exclamation)
@@ -97,9 +94,12 @@ Public Class Translations
     '''             English, 'fr' for French etc.). </returns>
     '''--------------------------------------------------------------------------------------------
     Private Shared Function GetLanguageCode() As String
+        If IsNothing(frmMain) OrElse IsNothing(frmMain.clsInstatOptions) OrElse
+                IsNothing(frmMain.clsInstatOptions.strLanguageCultureCode) Then
+            Return "en"
+        End If
         Dim arrLanguageCodes As String() = frmMain.clsInstatOptions.strLanguageCultureCode.Split(New Char() {"-"c})
-        Dim strLanguageCode As String = arrLanguageCodes(0)
-        Return strLanguageCode
+        Return arrLanguageCodes(0)
     End Function
 
     '''--------------------------------------------------------------------------------------------
@@ -114,7 +114,24 @@ Public Class Translations
         Return strDbPath
     End Function
 
-    ''' <summary>   TODO. </summary>
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   
+    '''    Writes a CSV file that can be imported into the `TranslateWinForm` library database. 
+    '''    This sub should be executed prior to each release to ensure that the `TranslateWinForm` 
+    '''    database contains all the translatable text for the new release.
+    '''    <para>
+    '''    The CSV file contains the identifiers and associated text of each form, control and menu 
+    '''    item in the application.     Please note that `ucrCheck` and `ucrInput` controls are 
+    '''    specifically excluded. This is because the text for these controls is set dynamically 
+    '''    at runtime.
+    '''    </para><para>
+    '''    This sub uses the `Reflection` package to automatically identify and traverse all the 
+    '''    forms, menus and controls in the current release. This information can also be found by 
+    '''    parsing the application source code files (e.g. the `resx` or `xlf` files). However, 
+    '''    we considered the `Reflection` package to be a simpler and less error-prone solution.
+    '''    </para>
+    ''' </summary>
+    '''--------------------------------------------------------------------------------------------
     Private Shared Sub WriteCsvFile()
 
         'Get list of all form classes in the application 
@@ -132,6 +149,8 @@ Public Class Translations
         Dim strControlsAsCsv As String = ""
         For Each typFormClass As Type In lstFormClasses
             Dim frmTemp As Form = CallByName(My.Forms, typFormClass.Name, CallType.Get)
+            'TODO need to prevent check boxes and input fields being added to the CSV file
+            ' If TypeOf clsControl Is ucrCheck OrElse TypeOf clsControl Is ucrInput Then
             strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetControlsAsCsv(frmTemp)
         Next
 
@@ -169,150 +188,6 @@ Public Class Translations
         System.Windows.Forms.Application.Exit()
     End Sub
 
-    ''''--------------------------------------------------------------------------------------------
-    '''' <summary>   TODORecursively traverses all the controls (including menu items) in <paramref name="clsControl"/> and populates <paramref name="dctComponents"/>
-    ''''              </summary>
-    ''''
-    '''' <param name="clsControl">    The control parent. </param>
-    '''' <param name="dctComponents">  [in,out] The dct controls. </param>
-    ''''--------------------------------------------------------------------------------------------
-    'Private Shared Sub GetDctComponentsFromControl(clsControl As Control, ByRef dctComponents As Dictionary(Of String, Component))
-    '    If IsNothing(clsControl) OrElse IsNothing(clsControl.Controls) OrElse
-    '            TypeOf clsControl Is ucrCheck OrElse TypeOf clsControl Is ucrInput OrElse
-    '            IsNothing(dctComponents) Then
-    '        Exit Sub
-    '    End If
-
-    '    If Not (String.IsNullOrEmpty(clsControl.Name) OrElse
-    '                String.IsNullOrEmpty(clsControl.Text) OrElse
-    '                clsControl.Text.Contains(vbCr) OrElse clsControl.Text.Contains(vbLf) OrElse 'ignore multiline text
-    '                Not Regex.IsMatch(clsControl.Text, "[a-zA-Z]") OrElse 'ignore text that doesn't contain any letters (e.g. number strings)
-    '                dctComponents.ContainsKey(clsControl.Name)) Then 'ignore components that are already in the dictionary
-    '        dctComponents.Add(clsControl.Name, clsControl)
-    '    End If
-
-    '    For Each ctlChild As Control In clsControl.Controls
-
-    '        If TypeOf ctlChild Is MenuStrip Then
-    '            Dim clsMenuStrip As MenuStrip = DirectCast(ctlChild, MenuStrip)
-    '            GetDctComponentsFromMenuItems(clsMenuStrip.Items, dctComponents)
-    '        ElseIf TypeOf ctlChild Is ToolStrip Then
-    '            Dim clsToolStrip As ToolStrip = DirectCast(ctlChild, ToolStrip)
-    '            GetDctComponentsFromMenuItems(clsToolStrip.Items, dctComponents)
-    '        ElseIf TypeOf ctlChild Is Control Then
-    '            GetDctComponentsFromControl(ctlChild, dctComponents)
-    '        End If
-
-    '    Next
-    'End Sub
-
-    'Private Shared Sub GetDctComponentsFromMenuItems(clsMenuItems As ToolStripItemCollection, ByRef dctComponents As Dictionary(Of String, Component))
-    '    If IsNothing(clsMenuItems) OrElse IsNothing(dctComponents) Then
-    '        Exit Sub
-    '    End If
-
-    '    For Each clsMenuItem As ToolStripItem In clsMenuItems
-
-    '        Dim arrRNewLines() As String = {vbCr, vbLf, vbCrLf}
-    '        If Not (String.IsNullOrEmpty(clsMenuItem.Name) OrElse
-    '                String.IsNullOrEmpty(clsMenuItem.Text) OrElse
-    '                clsMenuItem.Text.Contains(vbCr) OrElse clsMenuItem.Text.Contains(vbLf) OrElse 'ignore multiline text
-    '                Not Regex.IsMatch(clsMenuItem.Text, "[a-zA-Z]") OrElse 'ignore text that doesn't contain any letters (e.g. number strings)
-    '                dctComponents.ContainsKey(clsMenuItem.Name)) Then 'ignore components that are already in the dictionary
-    '            dctComponents.Add(clsMenuItem.Name, clsMenuItem)
-    '        End If
-
-    '        If TypeOf clsMenuItem Is ToolStripMenuItem Then
-    '            Dim mnuItem As ToolStripMenuItem = DirectCast(clsMenuItem, ToolStripMenuItem)
-    '            If mnuItem.HasDropDownItems Then
-    '                GetDctComponentsFromMenuItems(mnuItem.DropDownItems, dctComponents)
-    '            End If
-    '        ElseIf TypeOf clsMenuItem Is ToolStripSplitButton Then
-    '            Dim mnuItem As ToolStripSplitButton = DirectCast(clsMenuItem, ToolStripSplitButton)
-    '            If mnuItem.HasDropDownItems Then
-    '                GetDctComponentsFromMenuItems(mnuItem.DropDownItems, dctComponents)
-    '            End If
-    '        ElseIf TypeOf clsMenuItem Is ToolStripDropDownButton Then
-    '            Dim mnuItem As ToolStripDropDownButton = DirectCast(clsMenuItem, ToolStripDropDownButton)
-    '            If mnuItem.HasDropDownItems Then
-    '                GetDctComponentsFromMenuItems(mnuItem.DropDownItems, dctComponents)
-    '            End If
-    '        End If
-
-    '    Next
-    'End Sub
-
-
-    ''''--------------------------------------------------------------------------------------------
-    '''' <summary>   TODO. </summary>
-    ''''
-    '''' <param name="clsControl">    The WinForm control that is the parent of the menu. </param>
-    ''''
-    '''' <returns>   The controls as CSV. </returns>
-    ''''--------------------------------------------------------------------------------------------
-    'Private Shared Function GetControlsAsCsv(clsControl As Control) As String
-    '    If IsNothing(clsControl) Then
-    '        Return ""
-    '    End If
-
-    '    Dim dctComponents As Dictionary(Of String, Component) = New Dictionary(Of String, Component)
-    '    GetDctComponentsFromControl(clsControl, dctComponents)
-
-    '    Dim strControlsAsCsv As String = ""
-    '    For Each clsComponent In dctComponents
-
-    '        If TypeOf clsComponent.Value Is Control Then
-    '            Dim clsTmpControl As Control = DirectCast(clsComponent.Value, Control)
-    '            strControlsAsCsv &= clsControl.Name & "," & clsComponent.Key & "," & clsTmpControl.Text & vbCrLf
-    '        ElseIf TypeOf clsComponent.Value Is ToolStripItem Then
-    '            Dim clsMenuItem As ToolStripItem = DirectCast(clsComponent.Value, ToolStripItem)
-    '            strControlsAsCsv &= clsControl.Name & "," & clsComponent.Key & "," & clsMenuItem.Text & vbCrLf
-    '        Else
-    '            MsgBox("Developer Error: Translation dictionary entry (" & clsControl.Name & "," & clsComponent.Key & ") contained unexpected value type.")
-    '        End If
-
-    '    Next
-
-    '    Return strControlsAsCsv
-    'End Function
-
-    ''''--------------------------------------------------------------------------------------------
-    '''' <summary>   
-    ''''     Recursively traverses the <paramref name="tsCollection"/> menu hierarchy and returns a 
-    ''''     string containing the parent, name and associated text of each (sub)menu option in 
-    ''''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list 
-    ''''     suitable for importing into a database.
-    '''' </summary>
-    ''''
-    '''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
-    '''' <param name="tsCollection">     The WinForm menu items to add to the return string. </param>
-    ''''
-    '''' <returns>   
-    ''''     A string containing the parent and name of each (sub)menu option in
-    ''''     <paramref name="tsCollection"/>. The string is formatted as a comma-separated list
-    ''''     suitable for importing into a database. </returns>
-    ''''--------------------------------------------------------------------------------------------
-    'Private Shared Function GetMenuItemsAsCsv(ctrParent As Control, tsCollection As ToolStripItemCollection) As String
-    '    If IsNothing(ctrParent) OrElse IsNothing(tsCollection) Then
-    '        Return ""
-    '    End If
-
-    '    Dim dctComponents As Dictionary(Of String, Component) = New Dictionary(Of String, Component)
-    '    GetDctComponentsFromMenuItems(tsCollection, dctComponents)
-
-    '    Dim strMenuItemsAsCsv As String = ""
-    '    For Each clsComponent In dctComponents
-
-    '        If TypeOf clsComponent.Value Is ToolStripItem Then
-    '            Dim clsMenuItem As ToolStripItem = DirectCast(clsComponent.Value, ToolStripItem)
-    '            strMenuItemsAsCsv &= ctrParent.Name & "," & clsComponent.Key & "," & clsMenuItem.Text & vbCrLf
-    '        Else
-    '            MsgBox("Developer Error: Translation dictionary entry (" & ctrParent.Name & "," & clsComponent.Key & ") contained unexpected value type.")
-    '        End If
-
-    '    Next
-    '    Return strMenuItemsAsCsv
-    'End Function
 
     '**********************************************************************************************
     'TODO This section contains functions from the old translation system.
@@ -351,99 +226,6 @@ Public Class Translations
                 End If
             End If
         Next
-
-        '' Given a ControlCollection, attempt to translate the Text property of each control
-        'Dim formControl As Control
-        'Dim originalTag As String
-        'Dim translatedString As String
-
-        'For Each formControl In controls
-        '    If (TypeOf formControl Is Panel) Then
-        '        ' Recursively translate all controls inside the panel
-        '        translateEach(formControl.Controls)
-
-        '    ElseIf (TypeOf formControl Is MenuStrip) Then
-        '        ' Translate all MenuItems inside the MenuStrip
-        '        translateMenu(formControl)
-
-
-        '    ElseIf (TypeOf formControl Is UserControl) Then
-        '        ' Translate all controls in a usercontrol
-        '        translateEach(formControl.Controls)
-
-        '    ElseIf (TypeOf formControl Is TextBox OrElse TypeOf formControl Is Button OrElse TypeOf formControl Is Label OrElse TypeOf formControl Is CheckBox) Then
-        '        originalTag = formControl.Tag
-        '        If (originalTag IsNot Nothing) Then
-        '            translatedString = My.Resources.ResourceManager.GetObject(originalTag)
-        '            If (translatedString IsNot Nothing) Then
-        '                formControl.Text = translatedString
-        '            End If
-        '        End If
-        '    End If
-        'Next formControl
     End Sub
 
-
-    '**********************************************************************************************
-    'TODO This section contains old functions that have been replaced by the new translation system 
-    ' started in March 2021.
-    ' These functions will be deleted when the new translation system has been implemented.
-    '**********************************************************************************************
-
-    Public Shared Sub DELETEMEautoTranslate(ctrParent As Control, Optional CultureInfo As Globalization.CultureInfo = Nothing)
-        'Dim translatedString As String
-
-        '' Attempt to translate the form's title if it has a tag
-        'If frm.Tag IsNot Nothing Then
-        '    translatedString = My.Resources.ResourceManager.GetObject(frm.Tag)
-        '    If (translatedString IsNot Nothing) Then
-        '        frm.Text = translatedString
-        '    End If
-        'End If
-        ' Translate all controls in object
-        translateEach(ctrParent.Controls, ctrParent, New ComponentModel.ComponentResourceManager(ctrParent.GetType()), CultureInfo)
-    End Sub
-
-    'translateMenu And translateSubMenu should Not be neccessary if we can improve translateEach to accept any iterable
-    Public Shared Sub DELETEMEtranslateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
-        Dim tsItem As ToolStripItem
-        Dim mnuItem As ToolStripMenuItem
-        Dim res As ComponentModel.ComponentResourceManager = New ComponentModel.ComponentResourceManager(ctrParent.GetType)
-
-        For Each tsItem In tsCollection
-            ' process this item, then recursively process any sub items
-            res.ApplyResources(tsItem, tsItem.Name, Threading.Thread.CurrentThread.CurrentUICulture)
-            mnuItem = TryCast(tsItem, ToolStripMenuItem)
-            If mnuItem IsNot Nothing Then
-                mnuItem = DirectCast(tsItem, ToolStripMenuItem)
-                If mnuItem.HasDropDownItems Then
-                    translateMenu(mnuItem.DropDownItems, ctrParent)
-                End If
-            End If
-        Next
-    End Sub
-
-    '' translateMenu and translateSubMenu should not be neccessary if we can improve translateEach to accept any iterable
-    'Public Shared Sub translateSubMenu(subMenuControl As ToolStripItemCollection)
-    '    Dim item
-    '    Dim originalTag As String
-    '    Dim translatedString As String
-
-    '    For Each item In subMenuControl
-    '        ' process this item, then recursively process any sub items
-    '        If Not (TypeOf item Is ToolStripSeparator) Then
-
-    '            If (item.hasdropdownitems()) Then
-    '                translateSubMenu(item.DropDownItems)
-    '            End If
-    '            originalTag = item.Tag
-    '            If (originalTag IsNot Nothing) Then
-    '                translatedString = My.Resources.ResourceManager.GetObject(originalTag)
-    '                If (translatedString IsNot Nothing) Then
-    '                    item.Text = translatedString
-    '                End If
-    '            End If
-    '        End If
-    '    Next item
-    'End Sub
 End Class
