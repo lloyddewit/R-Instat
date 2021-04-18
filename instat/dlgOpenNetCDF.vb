@@ -288,6 +288,7 @@ Public Class dlgOpenNetCDF
             Me.Size = New Size(iExpandedWidth / 1.8, Me.Height)
             cmdDetails.Text = "Show Details >>"
         End If
+        autoTranslate(Me)
     End Sub
 
     Public Sub FileDetails()

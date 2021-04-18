@@ -53,9 +53,9 @@ Public Class dlgBarAndPieChart
         SetRCodeForControls(bReset)
 
         bReset = False
-        autoTranslate(Me)
-        ChangeLabel() 'TODO. this has been put here temporarily because there is a problem with the translation of the label
+        ChangeLabel()
         TestOkEnabled()
+        autoTranslate(Me)
     End Sub
 
     Private Sub InitialiseDialog()
@@ -331,6 +331,7 @@ Public Class dlgBarAndPieChart
         ChangeLabel()
         setColumnChartOption()
         TestOkEnabled()
+        autoTranslate(Me)
     End Sub
 
     Private Sub setColumnChartOption()

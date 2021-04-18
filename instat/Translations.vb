@@ -43,7 +43,7 @@ Public Class Translations
     ''' <param name="ctrParent">        The WinForm control that is the parent of the menu. </param>
     '''--------------------------------------------------------------------------------------------
     Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
-        ' The function below should normally be commented out. 
+        ' The 'WriteCsvFile' function call below should normally be commented out. 
         ' It only needs be uncommented and executed once, prior to each new release.
         'WriteCsvFile()
 
@@ -71,6 +71,22 @@ Public Class Translations
         HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataViewer.Name, frmMain.ucrDataViewer.grdData.ContextMenuStrip.Items, strDbPath, strLanguageCode))
         HandleError(TranslateWinForm.clsTranslateWinForm.TranslateMenuItems(frmMain.ucrDataViewer.Name, frmMain.ucrDataViewer.grdData.SheetTabContextMenuStrip.Items, strDbPath, strLanguageCode))
     End Sub
+
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   TODO Gets a translation. </summary>
+    '''
+    ''' <param name="strText">  The text. </param>
+    '''
+    ''' <returns>   The translation. </returns>
+    '''--------------------------------------------------------------------------------------------
+    Public Shared Function GetTranslation(strText As String) As String
+        If String.IsNullOrEmpty(strText) Then
+            Return ""
+        End If
+
+        Return TranslateWinForm.clsTranslateWinForm.GetTranslation(strText, GetDbPath(), GetLanguageCode())
+    End Function
+
 
     '''--------------------------------------------------------------------------------------------
     ''' <summary>   
@@ -149,8 +165,6 @@ Public Class Translations
         Dim strControlsAsCsv As String = ""
         For Each typFormClass As Type In lstFormClasses
             Dim frmTemp As Form = CallByName(My.Forms, typFormClass.Name, CallType.Get)
-            'TODO need to prevent check boxes and input fields being added to the CSV file
-            ' If TypeOf clsControl Is ucrCheck OrElse TypeOf clsControl Is ucrInput Then
             strControlsAsCsv &= TranslateWinForm.clsTranslateWinForm.GetControlsAsCsv(frmTemp)
         Next
 

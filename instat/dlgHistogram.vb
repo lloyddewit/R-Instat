@@ -267,6 +267,7 @@ Public Class dlgHistogram
             cmdHistogramOptions.Text = "Frequency Polygon Options"
             cmdHistogramOptions.Size = New Size(160, 25)
         End If
+        autoTranslate(Me)
     End Sub
 
     Private Sub SetOptionsButtonText()

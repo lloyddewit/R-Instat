@@ -368,6 +368,7 @@ Public Class dlgClimaticBoxPlot
         Else
             cmdBoxPlotOptions.Text = "Violin Options"
         End If
+        autoTranslate(Me)
     End Sub
 
     Private Sub cmdBoxPlotOptions_Click(sender As Object, e As EventArgs) Handles cmdBoxPlotOptions.Click

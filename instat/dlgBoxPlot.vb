@@ -377,6 +377,7 @@ Public Class dlgBoxplot
         Else
             cmdBoxPlotOptions.Text = "Violin Options"
         End If
+        autoTranslate(Me)
     End Sub
 
     Private Sub TempOptionsDisabledInMultipleVariablesCase()
