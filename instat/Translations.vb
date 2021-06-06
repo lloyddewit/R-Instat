@@ -45,7 +45,7 @@ Public Class Translations
     Public Shared Sub translateMenu(tsCollection As ToolStripItemCollection, ctrParent As Control)
         ' The 'WriteCsvFile' function call below should normally be commented out. 
         ' It only needs be uncommented and executed once, prior to each new release.
-        WriteCsvFile()
+        'WriteCsvFile()
 
         If IsNothing(tsCollection) OrElse IsNothing(ctrParent) OrElse IsNothing(TryCast(ctrParent, Form)) Then
             Exit Sub
@@ -165,13 +165,10 @@ Public Class Translations
         Dim strControlsAsCsv As String = ""
         For Each typFormClass As Type In lstFormClasses
             'TODO this if-else statement is just for debugging, delete or comment out before merging
-            If Not typFormClass.Name = "dlgEnter" Then
-                Continue For
-            Else
-                Dim frmTemp2 As Form = CallByName(My.Forms, typFormClass.Name, CallType.Get)
-                frmTemp2.ShowDialog()
-                Dim strTemp2 = TranslateWinForm.clsTranslateWinForm.GetControlsAsCsv(frmTemp2)
-            End If
+            'If Not typFormClass.Name = "dlgEnter" Then
+            '    Continue For
+            'Else
+            'End If
 
             Dim frmTemp As Form = CallByName(My.Forms, typFormClass.Name, CallType.Get)
             Dim strTemp = TranslateWinForm.clsTranslateWinForm.GetControlsAsCsv(frmTemp)
