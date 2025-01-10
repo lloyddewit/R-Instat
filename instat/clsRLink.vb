@@ -132,13 +132,13 @@ Public Class RLink
     Private strRVersionMajorRequired As String = "4"
 
     ''' <summary>   The R version minor required. </summary>
-    Private strRVersionMinorRequired As String = "1"
+    Private strRVersionMinorRequired As String = "4"
 
     ''' <summary>   The R version required. </summary>
-    Private strRVersionRequired As String = strRVersionMajorRequired & "." & strRVersionMinorRequired & ".0"
+    Private strRVersionRequired As String = strRVersionMajorRequired & "." & strRVersionMinorRequired & ".1"
 
     ''' <summary>   The R bundled version. </summary>
-    Private strRBundledVersion As String = "4.1.3"
+    Private strRBundledVersion As String = "4.4.1"
 
     Private clsOutputLogger As clsOutputLogger
 
@@ -200,9 +200,9 @@ Public Class RLink
         Catch ex As Exception
             MsgBox(ex.Message & Environment.NewLine & "Could not establish connection to R." & Environment.NewLine &
                    "R-Instat requires version " & strRVersionRequired & " of R." & Environment.NewLine &
-                   "Note that R-Instat does not work with R below 3.5.0. We recommend using R " & strRBundledVersion &
-                   ".  Try reruning the installation to install R " & strRBundledVersion & " or download R " &
-                   strRBundledVersion & " from https://cran.r-project.org/bin/windows/base/old/" & strRBundledVersion & "/ and restart R-Instat.",
+                   "Note that R-Instat does not work with R below 4.4.1. We recommend using R " & strRBundledVersion &
+                   ".  Try rerunning the installation to install R " & strRBundledVersion & " or download R " &
+                   strRBundledVersion & " from https://cran.r-project.org/bin/windows/base/old/" & strRBundledVersion & "/  and restart R-Instat.",
                    MsgBoxStyle.Critical, "Cannot initialise R connection.")
         End Try
 
@@ -228,7 +228,7 @@ Public Class RLink
                 MsgBox("Could not determine version of R installed on your machine. R-Instat requires version: " & strRVersionRequired & vbNewLine &
                                        "Try uninstalling any versions of R and rerun the installation to install R " & strRVersionRequired & " or download R " &
                                        strRVersionRequired & "From https://cran.r-project.org/bin/windows/base/old/" & strRVersionRequired &
-                                       "And restart R-Instat.",
+                                       " and restart R-Instat.",
                                        MsgBoxStyle.Critical, "R Version error.")
             ElseIf strMajor <> strRVersionMajorRequired OrElse strMinor.Substring(0, 1) < strRVersionMinorRequired Then
                 MsgBox("Your current version of R is outdated. You are currently running R version: " & strMajor & "." & strMinor & Environment.NewLine &
@@ -646,7 +646,7 @@ Public Class RLink
     '''
     ''' <param name="strScript">    The text to add to the save log file. </param>
     '''--------------------------------------------------------------------------------------------
-    Private Sub AppendToAutoSaveLog(strScript As String)
+    Public Sub AppendToAutoSaveLog(strScript As String)
         Dim strTempFile As String
         Dim i As Integer = 1
         Try
@@ -749,22 +749,9 @@ Public Class RLink
                          bShowWaitDialogOverride:=Nothing)
             End If
 
-             ' Split the strOutput into an array of lines, removing empty entries
-            Dim arrFilesPaths() As String = strOutput.Split({Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries)
-
-            ' Check if arrFilesPaths has at least one element before iterating
-            If arrFilesPaths.Length > 0 Then
-                ' Iterate through each file path
-                For Each _path In arrFilesPaths
-                    ' Add output to logger
-                    clsOutputLogger.AddOutput(clsRStatement.Text, _path, bAsFile:=True,
+            ' Add output to logger
+            clsOutputLogger.AddOutput(clsRStatement.Text, strOutput, bAsFile:=True,
                         bDisplayOutputInExternalViewer:=clsRStatement.TextNoFormatting.StartsWith("view_object_data"))
-                Next
-            Else
-                ' Add output to logger
-                clsOutputLogger.AddOutput(clsRStatement.Text, strOutput, bAsFile:=True,
-                        bDisplayOutputInExternalViewer:=clsRStatement.TextNoFormatting.StartsWith("view_object_data"))
-            End If
 
             ' Log the script
             LogScript(clsRStatement.Text.TrimEnd(vbCr, vbLf))
@@ -1012,22 +999,8 @@ Public Class RLink
                 End If
             End If
 
-            If bAsFile Then
-                ' Split the strOutput into an array of lines, removing empty entries
-                Dim arrFilesPaths() As String = strOutput.Split({Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries)
-                ' Iterate through each HTML files
-                For Each _path In arrFilesPaths
-                    ' Add each HTML file as an output to clsOutputLogger
-                    ' strScriptWithComment: the script with associated comments
-                    ' _path: the path to the HTML file
-                    ' bAsFile: a boolean indicating whether the output should be treated as a file
-                    ' bDisplayOutputInExternalViewer: a boolean indicating whether to display the output in an external viewer
-                    clsOutputLogger.AddOutput(strScriptWithComment, _path, bAsFile, bDisplayOutputInExternalViewer)
-                Next
-            Else
-                ' If strOutput is empty or does not contain valid HTML files, add strOutput itself as an output
-                clsOutputLogger.AddOutput(strScriptWithComment, strOutput, bAsFile, bDisplayOutputInExternalViewer)
-            End If
+            ' If strOutput is empty or does not contain valid HTML files, add strOutput itself as an output
+            clsOutputLogger.AddOutput(strScriptWithComment, strOutput, bAsFile, bDisplayOutputInExternalViewer)
 
 
         Catch e As Exception
@@ -1447,6 +1420,8 @@ Public Class RLink
                     clsGetItems.SetRCommand(strInstatDataObject & "$get_link_names")
                 Case "key"
                     clsGetItems.SetRCommand(strInstatDataObject & "$get_key_names")
+                Case "scalar"
+                    clsGetItems.SetRCommand(strInstatDataObject & "$get_scalar_names")
                 Case "database_variables"
                     clsGetItems.SetRCommand(strInstatDataObject & "$get_database_variable_names")
                     clsGetItems.AddParameter("query", Chr(34) & strDatabaseQuery & Chr(34))

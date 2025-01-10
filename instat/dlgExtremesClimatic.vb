@@ -257,14 +257,14 @@ Public Class dlgExtremesClimatic
         ucrSaveMrlPlot.SetPrefix("mrl_plot")
         ucrSaveMrlPlot.SetSaveTypeAsGraph()
         ucrSaveMrlPlot.SetIsComboBox()
-        ucrSaveMrlPlot.SetCheckBoxText("Save Graph")
+        ucrSaveMrlPlot.SetCheckBoxText("Store Graph")
         ucrSaveMrlPlot.SetAssignToIfUncheckedValue("last_graph")
 
         ucrSaveThresholdPlot.SetDataFrameSelector(ucrSelectorClimaticExtremes.ucrAvailableDataFrames)
         ucrSaveThresholdPlot.SetPrefix("threshold_plot")
         ucrSaveThresholdPlot.SetSaveTypeAsGraph()
         ucrSaveThresholdPlot.SetIsComboBox()
-        ucrSaveThresholdPlot.SetCheckBoxText("Save Graph")
+        ucrSaveThresholdPlot.SetCheckBoxText("Store Graph")
         ucrSaveThresholdPlot.SetAssignToIfUncheckedValue("last_graph")
 
         ucrNudDeclusterColumns.SetParameter(New RParameter("ncol", 7))
@@ -275,7 +275,7 @@ Public Class dlgExtremesClimatic
         ucrSaveDeclusteredPlot.SetPrefix("declustered_plot")
         ucrSaveDeclusteredPlot.SetSaveTypeAsGraph()
         ucrSaveDeclusteredPlot.SetIsComboBox()
-        ucrSaveDeclusteredPlot.SetCheckBoxText("Save Graph")
+        ucrSaveDeclusteredPlot.SetCheckBoxText("Store Graph")
         ucrSaveDeclusteredPlot.SetAssignToIfUncheckedValue("last_graph")
 
         ucrInputDistribution.SetParameter(New RParameter("type", 4))
@@ -447,7 +447,7 @@ Public Class dlgExtremesClimatic
         clsNSummary.AddParameter("save", "2", iPosition:=4)
         clsNSummary.SetAssignTo("n_dates_summary")
 
-        clsNFunction.SetRCommand("summary_count")
+        clsNFunction.SetRCommand("summary_count_all")
         clsNFunction.bToScriptAsRString = True
 
         clsFilterExtremeCalc.SetRCommand("instat_calculation$new")

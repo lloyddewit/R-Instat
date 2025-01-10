@@ -174,7 +174,7 @@ Public Class dlgMosaicPlot
 
         ucrSaveMosaicPlot.SetPrefix("mosaic")
         ucrSaveMosaicPlot.SetIsComboBox()
-        ucrSaveMosaicPlot.SetCheckBoxText("Save Graph")
+        ucrSaveMosaicPlot.SetCheckBoxText("Store Graph")
         ucrSaveMosaicPlot.SetSaveTypeAsGraph()
         ucrSaveMosaicPlot.SetDataFrameSelector(ucrSelectorMosaicPlot.ucrAvailableDataFrames)
         ucrSaveMosaicPlot.SetAssignToIfUncheckedValue("last_graph")
@@ -390,6 +390,8 @@ Public Class dlgMosaicPlot
 
         If bWrap OrElse bRow OrElse bCol Then
             clsBaseOperator.AddParameter("facets", clsRFunctionParameter:=clsFacetFunction)
+        Else
+            clsBaseOperator.RemoveParameterByName("facets")
         End If
         If bWrap Then
             clsFacetFunction.SetRCommand("facet_wrap")
